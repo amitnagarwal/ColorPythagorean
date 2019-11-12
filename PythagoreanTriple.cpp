@@ -4,7 +4,16 @@
 #include <assert.h>
 #include <iostream>
 #include <list>
+#include <set>
+#include "FlipOption.h"
 
+int PythogoreanTriple::getLegIndex(long long nodeIndex) const
+{
+	if (_leg[0] == nodeIndex) return 0;
+	if (_leg[1] == nodeIndex) return 1;
+	if (_leg[2] == nodeIndex) return 2;
+	return -1;
+}
 bool isPrimeNumber(long long inp)
 {
 	long lim = sqrt(inp) + 1;
@@ -34,6 +43,14 @@ bool PythogoreanTriple::isPrimitive() const
 
 	return true;
 }
+
+string PythogoreanTriple::print() const
+{
+	stringstream buffer;
+	buffer << "(" << _leg[0] << ", " << _leg[1] << ", " << _leg[2] << ")";
+	return buffer.str();
+}
+
 
 string PythogoreanTriple::print(const vector<Color>& inColors) const
 {
@@ -161,7 +178,7 @@ bool PythogoreanTriple::allColorsDifferentHandled(vector<Color>& inColors) const
 	return false;
 }
 
-vector<long long> previousIndices;
+set<long long> previousIndices;
 
 void clearPreviousIndices()
 {
@@ -170,7 +187,7 @@ void clearPreviousIndices()
 
 bool previouslySwitched(long long nodeIndx)
 {
-	vector<long long>::iterator kIter = find(previousIndices.begin(), previousIndices.end(), nodeIndx);
+	set<long long>::iterator kIter = find(previousIndices.begin(), previousIndices.end(), nodeIndx);
 	return (kIter != previousIndices.end());
 }
 
@@ -205,11 +222,11 @@ int PythogoreanTriple::allColorsSameHandled(vector<Color>& inColors) const
 	long long c = _leg[2];
 
 	// None of the three nodes are allowed to be switched in the downstream recursive calls
-	if (switchAllowed[2]) previousIndices.push_back(_leg[2]);
-	if (switchAllowed[1]) previousIndices.push_back(_leg[1]);
-	if (switchAllowed[0]) previousIndices.push_back(_leg[0]);
+	previousIndices.insert(_leg[2]);
+	previousIndices.insert(_leg[1]);
+	previousIndices.insert(_leg[0]);
 
-	vector<long long> previousIndicesSaved = previousIndices;
+	set<long long> previousIndicesSaved = previousIndices;
 	vector<Color>  tmpColors;
 	int numConflicts[3];
 
