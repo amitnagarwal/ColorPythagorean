@@ -26,13 +26,15 @@ void Color::equateNegatively(const Color& that)
 {
 	_ndx = that._ndx; 
 	_state = !that._state; 
-	if (_id > maxUsedIndx) maxUsedIndx = _id;
+	if (_id > maxUsedIndx)
+	{
+		maxUsedIndx = _id;
+	}
 }
 
-int checkTriplesWithGivenNode(FlipOption& fo, long long indx)
+int numPTriplesToBeFixed(FlipOption& fo, long long indx)
 {
-	cout << "Switchin " << indx << endl;
-	vector<Color>& tmpColors = fo._nodeColors;
+	vector<Color>& nColors = fo._nodeColors;
 
 	long long numTriples = pTriples[indx].size();
 	int numConflicts = 0;
@@ -49,14 +51,14 @@ int checkTriplesWithGivenNode(FlipOption& fo, long long indx)
 
 		const PythogoreanTriple& t = allPTriples[gTripleIndx];
 
-		// cout << "      " << gTripleIndx << "] " << t.print(tmpColors) << endl;
+		// cout << "      " << gTripleIndx << "] " << t.print(nColors) << endl;
 
-		if (t.isColoredValidly(tmpColors)) continue;
+		if (t.isColoredValidly(nColors)) continue;
 
-		if (tmpColors[t._leg[0]]._ndx == -1 || tmpColors[t._leg[1]]._ndx == -1 || tmpColors[t._leg[2]]._ndx == -1)
+		if (nColors[t._leg[0]]._ndx == -1 || nColors[t._leg[1]]._ndx == -1 || nColors[t._leg[2]]._ndx == -1)
 		{
-			t.handleSingleUnassigned(tmpColors);
-			// cout << "      " << gTripleIndx << "} " << t.print(tmpColors) << endl;
+			t.handleSingleUnassigned(nColors);
+			// cout << "      " << gTripleIndx << "} " << t.print(nColors) << endl;
 		}
 		else
 		{
@@ -64,32 +66,22 @@ int checkTriplesWithGivenNode(FlipOption& fo, long long indx)
 			int n2 = (n1 + 1) % 3;
 			int n3 = (n1 + 2) % 3;
 
-			if (tmpColors[t._leg[n2]]._ndx != tmpColors[t._leg[n3]]._ndx)
+			if (nColors[t._leg[n2]]._ndx != nColors[t._leg[n3]]._ndx)
 			{
-				mergeIndices(tmpColors, tmpColors[t._leg[n2]], tmpColors[t._leg[n3]]);
-				// cout << "      " << gTripleIndx << "| " << t.print(tmpColors) << endl;
+				mergeIndices(nColors, nColors[t._leg[n2]], nColors[t._leg[n3]]);
+				// cout << "      " << gTripleIndx << "| " << t.print(nColors) << endl;
 				continue;
 			}
 
 			fo._triplesToFix.push_back(gTripleIndx);
 			numConflicts++;
-			cout << "TBF2:     " << t.print(tmpColors) << endl;
+			cout << " [" << t.print(nColors) << "]";
 		}
 
 	} // iTr
 
-	if (numConflicts == 0)
-	{
-		cout << "Switched " << indx << endl;
-	}
-	else
-	{
-		cout << "     conflicts = " << numConflicts << endl;
-	}
-
 	return numConflicts;
 }
-
 
 int checkTriplesWithGivenNode(long long indx, vector<Color>& colors, bool recurse = false)
 {
@@ -191,7 +183,7 @@ void findAllPythagoreanTriples()
 {
 	pTriples.resize(lim);
 	long long ptCount = 0;
-	vector<Color> colors(lim);
+	//vector<Color> colors(lim);
 
 	for (long long c = 5; c < lim; c++)
 	{
@@ -219,7 +211,7 @@ void findAllPythagoreanTriples()
 				pTriples[t._leg[0]].push_back(ptCount);
 				pTriples[t._leg[1]].push_back(ptCount);
 				pTriples[t._leg[2]].push_back(ptCount);
-				colorAPythagoreanTriple(ptCount, colors);
+				//colorAPythagoreanTriple(ptCount, colors);
 				ptCount++;
 			}
 		} // a
@@ -284,10 +276,19 @@ void printAllTriplesToFile()
 
 void clearPreviousIndices();
 
-FlipOption::FlipOption(long long inNode, int c)
+FlipOption::FlipOption(int c, long long inNode1, long long inNode2)
 {
-	_flipNodes.insert(inNode);
-	_conflict = c;
+	_cnf = c;
+	_fN1 = inNode1;
+	_fN2 = inNode2;
+}
+
+bool FlipOption::operator<(const FlipOption& that) const 
+{
+	if (_triplesToFix.size() > 0 || that._triplesToFix.size() > 0)
+		return (_triplesToFix.size() < that._triplesToFix.size());
+	else
+		return (_cnf < that._cnf);
 }
 
 bool isFlippable(const set<long long>& inNodes, long long nodeIndx)
@@ -296,15 +297,15 @@ bool isFlippable(const set<long long>& inNodes, long long nodeIndx)
 	return (kIter != inNodes.end());
 }
 
-int process(
-	const PythogoreanTriple& pt, 
-	vector<Color>& inColors, 
-	set<long long>& fixedNodes, 
-	list<FlipOption>& flipOptions
+list<FlipOption> analyzePTriple(
+	const PythogoreanTriple& pt,   // In
+	const vector<Color>& inColors, // In
+	set<long long>& fixedNodes   // Modified
 )
 {
 	cout << "************************************************" << endl;
 	cout << "TBF1:     " << pt.print(inColors) << endl;
+	list<FlipOption> flipOptions;
 
 	bool flipAllowed[3];
 	
@@ -314,99 +315,173 @@ int process(
 
 	if (!flipAllowed[0] && !flipAllowed[1] && !flipAllowed[2])
 	{
-		return 1000;
+		return flipOptions;
 	}
 
 	fixedNodes.insert(pt._leg[0]);
 	fixedNodes.insert(pt._leg[1]);
 	fixedNodes.insert(pt._leg[2]);
 
-	if (flipAllowed[0]) flipOptions.push_back(FlipOption(pt._leg[0], pTriples[pt._leg[0]].size()));
-	if (flipAllowed[1]) flipOptions.push_back(FlipOption(pt._leg[1], pTriples[pt._leg[1]].size()));
-	if (flipAllowed[2]) flipOptions.push_back(FlipOption(pt._leg[2], pTriples[pt._leg[2]].size()));
+	if (flipAllowed[2]) flipOptions.push_back(FlipOption(pTriples[pt._leg[2]].size(), pt._leg[2]));
+	if (flipAllowed[1]) flipOptions.push_back(FlipOption(pTriples[pt._leg[1]].size(), pt._leg[1]));
+	if (flipAllowed[0]) flipOptions.push_back(FlipOption(pTriples[pt._leg[0]].size(), pt._leg[0]));
+
+	if (flipAllowed[2] && flipAllowed[1])
+	{
+		//flipOptions.push_back(FlipOption(pTriples[pt._leg[2]].size()+ pTriples[pt._leg[1]].size(), pt._leg[2], pt._leg[1]));
+	}
+
+	if (flipAllowed[2] && flipAllowed[0])
+	{
+		//flipOptions.push_back(FlipOption(pTriples[pt._leg[2]].size() + pTriples[pt._leg[0]].size(), pt._leg[2], pt._leg[0]));
+	}
+
+	if (flipAllowed[1] && flipAllowed[0])
+	{
+		//flipOptions.push_back(FlipOption(pTriples[pt._leg[1]].size() + pTriples[pt._leg[0]].size(), pt._leg[1], pt._leg[0]));
+	}
 
 	flipOptions.sort();
 
 	list<FlipOption>::iterator foIter;
-	int minConflict = 10000;
+	int opt = 1;
 
 	for (foIter = flipOptions.begin(); foIter != flipOptions.end(); foIter++)
 	{
-		long long node = *(foIter->_flipNodes.begin());
+		foIter->_fixedNodes = fixedNodes;
 		foIter->_nodeColors = inColors;
-		foIter->_nodeColors[node]._state = !foIter->_nodeColors[node]._state;
-		int conf = checkTriplesWithGivenNode(*foIter, node);
-		minConflict = min(minConflict, conf);
-		foIter->_conflict = conf;
-		if (conf == 0)
+		foIter->_nodeColors[foIter->_fN1]._state = !foIter->_nodeColors[foIter->_fN1]._state;
+		cout << "     O" << opt++ << ": " << foIter->_fN1;
+		if (foIter->_fN2 != -1)
 		{
-			inColors = foIter->_nodeColors;
-			return conf;
+			foIter->_nodeColors[foIter->_fN2]._state = !foIter->_nodeColors[foIter->_fN2]._state;
+			cout << " & " << foIter->_fN2;
 		}
+		else
+		{
+			cout << "      ";
+		}
+
+		int conf = numPTriplesToBeFixed(*foIter, foIter->_fN1);
+		if (foIter->_fN2 != -1)
+		{
+			conf += numPTriplesToBeFixed(*foIter, foIter->_fN2);
+		}
+		cout << " => C = " << conf << endl;
+
 	}
 
-	return minConflict;
+	return flipOptions;
 }
 
-int allColorsSameHandled2(const PythogoreanTriple& pt, vector<Color>& inColors)
+void allColorsSameHandled2(const PythogoreanTriple& pt, vector<Color>& inColors)
 {
-	list<FlipOption> flipOptions;
-	set<long long> fixedNodes;
-	int conf = process(pt, inColors, fixedNodes, flipOptions);
-	if (conf == 0) return 0;
-
-	flipOptions.sort();
-	list<FlipOption> fosLower;
-	list<FlipOption> fosLowerAll;
-	list<FlipOption>::iterator foIt;
-
+	set<long long> fixedNodesHL;
+	list<FlipOption> flipOptions = analyzePTriple(pt, inColors, fixedNodesHL);
 	if (flipOptions.size() == 0)
 	{
 		int aabv = 4;
 	}
+	flipOptions.sort();
+
+	int conf = flipOptions.front()._triplesToFix.size();
+	if (conf == 0)
+	{
+		if (flipOptions.front()._fN2 == -1)
+		{
+			cout << "Flipping  " << flipOptions.front()._fN1 << endl;
+		}
+		else
+		{
+			cout << "Flipping  "
+				<< flipOptions.front()._fN1 << " & "
+				<< flipOptions.front()._fN2 << endl;
+		}
+
+		inColors = flipOptions.front()._nodeColors;
+		return;
+	}
+
+	list<FlipOption> allOptions;
+	list<FlipOption>::iterator foIt, foIt2;
+
+	set<long long> fixedNodes;
 
 	while (1)
 	{
 		FlipOption fo = flipOptions.front();
 		flipOptions.pop_front();
-		vector<long long>::iterator pPTIter;
-		int totalConflict = 0;
-		if (fo._triplesToFix.size() >= 2)
-		{
-			int and = 5;
-		}
-		for (pPTIter = fo._triplesToFix.begin(); pPTIter != fo._triplesToFix.end(); pPTIter++)
+		vector<long long>::iterator pPTIter = fo._triplesToFix.begin();
+		PythogoreanTriple pt = allPTriples[*pPTIter];
+		fo._fixedNodes = fixedNodesHL;
+		list<FlipOption> fosLower = analyzePTriple(pt, fo._nodeColors, fo._fixedNodes);
+
+		for (pPTIter++; pPTIter != fo._triplesToFix.end(); pPTIter++)
 		{
 			PythogoreanTriple pt = allPTriples[*pPTIter];
-			int conf2 = process(pt, fo._nodeColors, fixedNodes, fosLower);
-			totalConflict += conf2;			
+			list<FlipOption> fOps;
+
 			for (foIt = fosLower.begin(); foIt != fosLower.end(); foIt++)
 			{
-				fosLowerAll.push_back(*foIt);
+				list<FlipOption> fosCurr = analyzePTriple(pt, foIt->_nodeColors, foIt->_fixedNodes);
+				for (foIt2 = fosCurr.begin(); foIt2 != fosCurr.end(); foIt2++)
+				{
+					//foIt2->_conflict += foIt->_conflict;
+					// TODO merge the two triplesToFix
+					vector<long long>::iterator qPTIt = foIt->_triplesToFix.begin();
+					for (; qPTIt != foIt->_triplesToFix.end(); qPTIt++)
+					{
+						foIt2->_triplesToFix.push_back(*qPTIt);
+					}
+					fOps.push_back(*foIt2);
+				}
 			}
 			fosLower.clear();
+			fosLower = fOps;
+			fOps.clear();
 		}
 
-		if (totalConflict == 0)
+		fosLower.sort();
+		int conf = fosLower.front()._triplesToFix.size();
+		if (conf == 0)
 		{
-			inColors = fo._nodeColors;
-			return 0;
+			if (fosLower.front()._fN2 == -1)
+			{
+				cout << "Flipping  " << fosLower.front()._fN1 << endl;
+			}
+			else
+			{
+				cout << "Flipping  "
+					<< fosLower.front()._fN1 << " & "
+					<< fosLower.front()._fN2 << endl;
+			}
+
+			inColors = fosLower.front()._nodeColors;
+			return;
 		}
+
+		for (foIt = fosLower.begin(); foIt != fosLower.end(); foIt++)
+		{
+			allOptions.push_back(*foIt);
+		}
+		fosLower.clear();
 
 		if (flipOptions.size() == 0)
 		{
-			flipOptions = fosLowerAll;
-			fosLowerAll.clear();
+			flipOptions = allOptions;
+			allOptions.clear();
 			flipOptions.sort();
 		}
 	}
-	return flipOptions.begin()->_conflict;
+
+	return;
 }
 
 void colorAPythagoreanTriple(long i, vector<Color>& colors)
 {
 	maxGlobalElementIndex = i;
 	PythogoreanTriple& t = allPTriples[i];
+	maxUsedIndx = max(maxUsedIndx, t._leg[2]);
 
 	if (i == 412)
 	{
@@ -502,18 +577,11 @@ void colorAPythagoreanTriple(long i, vector<Color>& colors)
 
 		} // n1
 
-		int nc = allColorsSameHandled2(t, colors);
+		allColorsSameHandled2(t, colors);
 		//int nc = t.allColorsSameHandled(colors);
-		if (nc == 0) goto printColors;
-		else
-		{
-			int a = 4;
-		}
 
 		break;
 	} // switch (numUnassigned)
-
-	int abc = 2;
 
 printColors:
 
@@ -528,7 +596,7 @@ printColors:
 		Color c1 = colors[pt._leg[1]];
 		Color c2 = colors[pt._leg[2]];
 
-		if (ik == 245)
+		if (ik == 176)
 		{
 			int a = 5;
 		}
@@ -556,9 +624,9 @@ long main() {
 	//printMaxFreqTriples();
 	//printMinFreqTriples();
 
-	printAllTriplesToFile();
+	//printAllTriplesToFile();
 
-	//colorPythagoreanNumbers(); // such that all three numbers of a triple are not the same color.
+	colorPythagoreanNumbers(); // such that all three numbers of a triple are not the same color.
 
 	return 0;
 }
