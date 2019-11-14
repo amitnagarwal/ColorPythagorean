@@ -23,4 +23,6 @@ public:
 };
 
 typedef vector<PythogoreanTriple> PytList;
+typedef vector<PythogoreanTriple>::iterator PytListIt;
 typedef vector<long long> pPytList;
+typedef vector<long long>::iterator pPytListIt;
