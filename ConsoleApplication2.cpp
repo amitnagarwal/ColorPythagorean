@@ -285,10 +285,11 @@ FlipOption::FlipOption(int c, long long inNode1, long long inNode2)
 
 bool FlipOption::operator<(const FlipOption& that) const 
 {
-	if (_triplesToFix.size() > 0 || that._triplesToFix.size() > 0)
+	if (_cnf == that._cnf)
+	{
 		return (_triplesToFix.size() < that._triplesToFix.size());
-	else
-		return (_cnf < that._cnf);
+	}
+	return (_cnf < that._cnf);
 }
 
 bool isFlippable(const set<long long>& inNodes, long long nodeIndx)
@@ -367,6 +368,7 @@ list<FlipOption> analyzePTriple(
 		{
 			conf += numPTriplesToBeFixed(*foIter, foIter->_fN2);
 		}
+		foIter->_cnf = conf;
 		cout << " => C = " << conf << endl;
 
 	}
@@ -382,38 +384,31 @@ void allColorsSameHandled2(const PythogoreanTriple& pt, vector<Color>& inColors)
 	{
 		int aabv = 4;
 	}
-	flipOptions.sort();
 
-	int conf = flipOptions.front()._triplesToFix.size();
-	if (conf == 0)
-	{
-		if (flipOptions.front()._fN2 == -1)
-		{
-			cout << "Flipping  " << flipOptions.front()._fN1 << endl;
-		}
-		else
-		{
-			cout << "Flipping  "
-				<< flipOptions.front()._fN1 << " & "
-				<< flipOptions.front()._fN2 << endl;
-		}
-
-		inColors = flipOptions.front()._nodeColors;
-		return;
-	}
-
-	list<FlipOption> allOptions;
 	list<FlipOption>::iterator foIt, foIt2;
 
 	set<long long> fixedNodes;
 
-	while (1)
+	while (flipOptions.size() > 0)
 	{
+		flipOptions.sort();
 		FlipOption fo = flipOptions.front();
 		flipOptions.pop_front();
 		vector<long long>::iterator pPTIter = fo._triplesToFix.begin();
+		if (pPTIter == fo._triplesToFix.end())
+		{
+			if (fo._fN2 == -1)
+			{
+				cout << "Flipping  " << fo._fN1 << endl;
+			}
+			else
+			{
+				cout << "Flipping  " << fo._fN1 << " & " << fo._fN2 << endl;
+			}
+			inColors = fo._nodeColors;
+			return;
+		}
 		PythogoreanTriple pt = allPTriples[*pPTIter];
-		fo._fixedNodes = fixedNodesHL;
 		list<FlipOption> fosLower = analyzePTriple(pt, fo._nodeColors, fo._fixedNodes);
 
 		for (pPTIter++; pPTIter != fo._triplesToFix.end(); pPTIter++)
@@ -442,36 +437,13 @@ void allColorsSameHandled2(const PythogoreanTriple& pt, vector<Color>& inColors)
 		}
 
 		fosLower.sort();
-		int conf = fosLower.front()._triplesToFix.size();
-		if (conf == 0)
-		{
-			if (fosLower.front()._fN2 == -1)
-			{
-				cout << "Flipping  " << fosLower.front()._fN1 << endl;
-			}
-			else
-			{
-				cout << "Flipping  "
-					<< fosLower.front()._fN1 << " & "
-					<< fosLower.front()._fN2 << endl;
-			}
-
-			inColors = fosLower.front()._nodeColors;
-			return;
-		}
 
 		for (foIt = fosLower.begin(); foIt != fosLower.end(); foIt++)
 		{
-			allOptions.push_back(*foIt);
+			foIt->_cnf += fo._cnf;
+			flipOptions.push_back(*foIt);
 		}
 		fosLower.clear();
-
-		if (flipOptions.size() == 0)
-		{
-			flipOptions = allOptions;
-			allOptions.clear();
-			flipOptions.sort();
-		}
 	}
 
 	return;
@@ -483,7 +455,7 @@ void colorAPythagoreanTriple(long i, vector<Color>& colors)
 	PythogoreanTriple& t = allPTriples[i];
 	maxUsedIndx = max(maxUsedIndx, t._leg[2]);
 
-	if (i == 412)
+	if (i == 538)
 	{
 		int a = 5;
 	}
@@ -514,9 +486,16 @@ void colorAPythagoreanTriple(long i, vector<Color>& colors)
 		int n1 = t.maxCountIndx;
 		int n2 = (n1 + 1) % 3;
 		int n3 = (n1 + 2) % 3;
-
-		colors[t._leg[n2]]._ndx = t._leg[n2];
-		colors[t._leg[n3]].equateNegatively(colors[t._leg[n2]]);
+		if (t._leg[n2] < t._leg[n3])
+		{
+			colors[t._leg[n2]]._ndx = t._leg[n2];
+			colors[t._leg[n3]].equateNegatively(colors[t._leg[n2]]);
+		}
+		else
+		{
+			colors[t._leg[n3]]._ndx = t._leg[n3];
+			colors[t._leg[n2]].equateNegatively(colors[t._leg[n3]]);
+		}
 
 		break;
 	}
