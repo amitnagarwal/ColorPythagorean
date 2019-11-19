@@ -5,6 +5,7 @@
 using namespace std; 
 
 class Color;
+typedef vector<long long> pPytList;
 
 class PythogoreanTriple
 {
@@ -12,6 +13,9 @@ public:
 	bool isPrimitive() const;
 	string print() const;
 	string print(const vector<Color>& inColors) const;
+	string print(const vector<pPytList>& pTriples) const;
+	bool operator==(const PythogoreanTriple& pt) const;
+
 	int getLegIndex(long long nodeIndex) const;
 	bool isColoredValidly(const vector<Color>& colors) const;
 	void handleSingleUnassigned(vector<Color>& inColors) const;
@@ -24,5 +28,4 @@ public:
 
 typedef vector<PythogoreanTriple> PytList;
 typedef vector<PythogoreanTriple>::iterator PytListIt;
-typedef vector<long long> pPytList;
 typedef vector<long long>::iterator pPytListIt;
