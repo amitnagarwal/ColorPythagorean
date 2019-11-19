@@ -67,6 +67,23 @@ string PythogoreanTriple::print(const vector<Color>& inColors) const
 	return buffer.str();
 }
 
+string PythogoreanTriple::print(const vector<pPytList>& pTriples) const
+{
+	stringstream buffer;
+
+	buffer << "(" << _leg[0] << ", " << _leg[1] << ", " << _leg[2] << ") = (";
+	buffer << pTriples[_leg[0]].size() << ", ";
+	buffer << pTriples[_leg[1]].size() << ", ";
+	buffer << pTriples[_leg[2]].size() << ")";
+
+	return buffer.str();
+}
+
+bool PythogoreanTriple::operator==(const PythogoreanTriple& pt) const
+{
+	return ((_leg[0] == pt._leg[0]) && (_leg[1] == pt._leg[1]) && (_leg[2] == pt._leg[2]));
+}
+
 bool PythogoreanTriple::isColoredValidly(const vector<Color>& colors) const
 {
 	if (colors[_leg[1]]._ndx == colors[_leg[0]]._ndx &&
