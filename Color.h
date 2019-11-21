@@ -8,6 +8,7 @@ class Color
 {
 public:
 	Color() : _ndx(-1), _state(false), _id(startID++) {}
+	Color(long long n, bool s, long i) : _ndx(n), _state(s), _id(i) {}
 
 	bool isAssigned() const { return (_ndx != -1); }
 	bool isUnassigned() const { return (_ndx == -1); }
