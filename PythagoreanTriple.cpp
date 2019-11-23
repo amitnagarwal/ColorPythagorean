@@ -14,6 +14,7 @@ int PythogoreanTriple::getLegIndex(long long nodeIndex) const
 	if (_leg[2] == nodeIndex) return 2;
 	return -1;
 }
+
 bool isPrimeNumber(long long inp)
 {
 	long lim = sqrt(inp) + 1;
@@ -50,7 +51,6 @@ string PythogoreanTriple::print() const
 	buffer << "(" << _leg[0] << ", " << _leg[1] << ", " << _leg[2] << ")";
 	return buffer.str();
 }
-
 
 string PythogoreanTriple::print(const vector<Color>& inColors) const
 {
@@ -98,6 +98,17 @@ bool PythogoreanTriple::isColoredValidly(const vector<Color>& colors) const
 	}
 	if (colors[_leg[2]]._ndx == colors[_leg[1]]._ndx &&
 		colors[_leg[2]]._state != colors[_leg[1]]._state)
+	{
+		return true;
+	}
+
+	return false;
+}
+
+bool PythogoreanTriple::isColoredValidlyOnFirstTwo(const vector<Color>& colors) const
+{
+	if (colors[_leg[1]]._ndx == colors[_leg[0]]._ndx &&
+		colors[_leg[1]]._state != colors[_leg[0]]._state)
 	{
 		return true;
 	}
