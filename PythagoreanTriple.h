@@ -18,7 +18,9 @@ public:
 
 	int getLegIndex(long long nodeIndex) const;
 	bool isColoredValidly(const vector<Color>& colors) const;
+	bool isColoredValidlyOnFirstTwo(const vector<Color>& colors) const;
 	void handleSingleUnassigned(vector<Color>& inColors) const;
+	void handleDoubleUnassigned(vector<Color>& inColors) const;
 	bool allColorsDifferentHandled(vector<Color>& inColors) const;
 	int allColorsSameHandled(vector<Color>& inColors) const;
 
