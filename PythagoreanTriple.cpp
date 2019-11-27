@@ -84,6 +84,17 @@ bool PythogoreanTriple::operator==(const PythogoreanTriple& pt) const
 	return ((_leg[0] == pt._leg[0]) && (_leg[1] == pt._leg[1]) && (_leg[2] == pt._leg[2]));
 }
 
+bool PythogoreanTriple::isSingleColored(const vector<Color>& colors) const
+{
+	if (colors[_leg[1]]._ndx == colors[_leg[0]]._ndx &&
+		colors[_leg[2]]._ndx == colors[_leg[0]]._ndx &&
+		colors[_leg[1]]._state == colors[_leg[0]]._state &&
+		colors[_leg[2]]._state == colors[_leg[0]]._state)
+	{
+		if (colors[_leg[0]]._ndx != -1) return true;
+	}
+	return false;
+}
 bool PythogoreanTriple::isColoredValidly(const vector<Color>& colors) const
 {
 	if (colors[_leg[1]]._ndx == colors[_leg[0]]._ndx &&
@@ -361,6 +372,16 @@ completed:
 	inColors = tmpColors;
 //	previousIndices.clear();
 	return 0;
+}
+
+short PythogoreanTriple::getNumUnassigned(const vector<Color>& colors) const
+{
+	short numUnassigned = 0;
+	if (colors[_leg[0]].isUnassigned()) numUnassigned++;
+	if (colors[_leg[1]].isUnassigned()) numUnassigned++;
+	if (colors[_leg[2]].isUnassigned()) numUnassigned++;
+
+	return numUnassigned;
 }
 
 
